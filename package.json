@@ -1,0 +1,49 @@
+{
+  "name": "create-stardrive",
+  "version": "1.0.0",
+  "description": "This is the launchpad application to create the Astro Stardrive boilerplate.",
+  "bin": {
+    "create-stardrive": "bin/index.js"
+  },
+  "files": [
+    "index.js"
+  ],
+  "keywords": [
+    "astro",
+    "stardrive",
+    "javascript",
+    "typescript",
+    "html",
+    "tailwind",
+    "web",
+    "landingpage",
+    "starter",
+    "template",
+    "framework",
+    "boilerplate"
+  ],
+  "homepage": "https://github.com/Peltmonger/create-stardrive#readme",
+  "bugs": {
+    "url": "https://github.com/Peltmonger/create-stardrive/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Peltmonger/create-stardrive.git"
+  },
+  "author": {
+    "name": "Peltmonger Ventures GmbH",
+    "url": "https://peltmonger.com/"
+  },
+  "maintainers": [
+    {
+      "name": "Jens Kuerschner",
+      "url": "https://jekuer.com/"
+    }
+  ],
+  "license": "MIT",
+  "funding": "https://github.com/peltmonger/stardrive?sponsor=1",
+  "type": "module",
+  "engines": {
+    "node": ">=14"
+  }
+}

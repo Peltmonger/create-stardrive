@@ -1,0 +1,60 @@
+# This workflow will build and publish a package to npm when a release is created
+# For more information see: https://docs.npmjs.com/trusted-publishers
+
+name: npm publish
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  TAG: '${{ github.event.release.tag_name }}'
+
+jobs:
+  validate-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Validate version tag pattern
+        run: |
+          if [[ ! "${{ env.TAG }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version tag ${{ env.TAG }} invalid."
+            exit 1
+          fi
+      - name: Verify the tag is based off the main branch
+        run: |
+          if [[ "${{ github.event.release.target_commitish }}" != "main" ]]; then
+            echo "Release is not based on main branch but ${{ github.event.release.target_commitish }}"
+            exit 1
+          fi
+      - name: Make sure tag matches package.json version
+        run: |
+          PACKAGE_VERSION=$(node -e "console.log(require('./package.json').version);")
+          VERSION=$(echo "$TAG" | sed 's/v//g')
+          if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+            echo "Different versions between package.json ($PACKAGE_VERSION) and release tag ($VERSION)"
+            exit 1
+          fi
+
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org/
+          cache: 'npm'
+      - name: Update npm
+        run: npm install -g npm@latest
+      - name: Prepare with npm ci
+        run: npm ci
+      - name: Build package
+        run: npm run build
+      - name: Publish package
+        run: npm publish
