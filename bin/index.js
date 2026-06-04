@@ -221,7 +221,7 @@ step(`Beaming ${c.bold(tag)} down from orbit`);
 info(repo);
 
 execSync(
-  `git clone --depth=1 --branch ${tag} --quiet ${repo} "${tempDir}"`,
+  `git -c advice.detachedHead=false clone --depth=1 --branch ${tag} --quiet ${repo} "${tempDir}"`,
   {
     stdio: ["ignore", "ignore", "inherit"],
   }
