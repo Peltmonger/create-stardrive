@@ -3,11 +3,49 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import readline from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
 import { execSync, spawnSync } from "node:child_process";
 
 const args = process.argv.slice(2);
 
 const skipInstall = args.includes("--no-install");
+
+//
+// Pretty logging helpers
+//
+
+const supportsColor =
+  output.isTTY && process.env.TERM !== "dumb" && !process.env.NO_COLOR;
+
+const paint = (code, text) =>
+  supportsColor ? `\x1b[${code}m${text}\x1b[0m` : text;
+
+const c = {
+  dim: (t) => paint("2", t),
+  bold: (t) => paint("1", t),
+  cyan: (t) => paint("36", t),
+  magenta: (t) => paint("35", t),
+  green: (t) => paint("32", t),
+  yellow: (t) => paint("33", t),
+  red: (t) => paint("31", t),
+};
+
+const banner = `
+  ${c.magenta("★")} ${c.bold(c.cyan("Stardrive Launchpad"))} ${c.magenta("★")}
+  ${c.dim("Fueling your next Astro project...")}
+`;
+
+let stepNum = 0;
+const step = (msg) =>
+  console.log(`\n${c.cyan(`[${++stepNum}]`)} ${c.bold(msg)}`);
+const info = (msg) => console.log(`    ${c.dim(msg)}`);
+const ok = (msg) => console.log(`    ${c.green("✓")} ${msg}`);
+const fail = (msg) => console.error(`\n${c.red("✗")} ${msg}\n`);
+
+//
+// Argument parsing
+//
 
 function parseFlag(name) {
   const eqIndex = args.findIndex((a) => a.startsWith(`${name}=`));
@@ -34,9 +72,6 @@ const positional = args.filter((a, i) => {
   return true;
 });
 
-const projectName = positional[0] || "my-stardrive";
-const targetDir = path.resolve(projectName);
-
 function detectPackageManager() {
   const ua = process.env.npm_config_user_agent || "";
 
@@ -56,17 +91,72 @@ function commandExists(cmd) {
 const pm = detectPackageManager();
 
 if (!commandExists(pm)) {
-  console.error(`${pm} is not installed`);
-  process.exit(1);
-}
-
-if (fs.existsSync(targetDir)) {
-  console.error(`Directory "${projectName}" already exists`);
+  fail(`${pm} is not installed`);
   process.exit(1);
 }
 
 //
-// Download template repo
+// Project name (interactive if not provided)
+//
+
+function isValidProjectName(name) {
+  return /^[a-z0-9._-]+$/i.test(name) && !/^[._]/.test(name);
+}
+
+async function askProjectName(initial) {
+  if (initial && isValidProjectName(initial)) {
+    const targetDir = path.resolve(initial);
+    if (!fs.existsSync(targetDir)) return initial;
+    fail(`Directory "${initial}" already exists.`);
+  }
+
+  if (!input.isTTY) {
+    fail(
+      `Project name "${initial || ""}" is missing or invalid and stdin is not interactive.`
+    );
+    process.exit(1);
+  }
+
+  const rl = readline.createInterface({ input, output });
+
+  try {
+    while (true) {
+      const answer = (
+        await rl.question(
+          `${c.cyan("?")} ${c.bold("Project name:")} ${c.dim("(my-stardrive) ")}`
+        )
+      ).trim();
+
+      const name = answer || "my-stardrive";
+
+      if (!isValidProjectName(name)) {
+        console.log(
+          `  ${c.yellow("!")} Use letters, digits, dots, dashes or underscores.`
+        );
+        continue;
+      }
+
+      const targetDir = path.resolve(name);
+
+      if (fs.existsSync(targetDir)) {
+        console.log(`  ${c.yellow("!")} "${name}" already exists. Try another.`);
+        continue;
+      }
+
+      return name;
+    }
+  } finally {
+    rl.close();
+  }
+}
+
+console.log(banner);
+
+const projectName = await askProjectName(positional[0]);
+const targetDir = path.resolve(projectName);
+
+//
+// Resolve which tag to clone
 //
 
 const repo = "https://github.com/Peltmonger/stardrive.git";
@@ -102,7 +192,7 @@ function resolveTag() {
     const wanted = normalizeTag(requestedVersion);
 
     if (!tags.includes(wanted)) {
-      console.error(`Version "${requestedVersion}" not found in ${repo}`);
+      fail(`Version "${requestedVersion}" not found in ${repo}`);
       process.exit(1);
     }
 
@@ -112,20 +202,30 @@ function resolveTag() {
   const stable = tags.filter((t) => /^v?\d+\.\d+\.\d+$/.test(t));
 
   if (stable.length === 0) {
-    console.error(`No tagged releases found in ${repo}`);
+    fail(`No tagged releases found in ${repo}`);
     process.exit(1);
   }
 
   return stable.sort(compareSemver).pop();
 }
 
+step("Locating the latest Stardrive release");
 const tag = resolveTag();
+ok(`Selected ${c.bold(tag)}`);
 
-console.log(`\nCloning ${repo} at ${tag}...\n`);
+//
+// Clone
+//
 
-execSync(`git clone --depth=1 --branch ${tag} ${repo} "${tempDir}"`, {
-  stdio: "inherit",
-});
+step(`Beaming ${c.bold(tag)} down from orbit`);
+info(repo);
+
+execSync(
+  `git clone --depth=1 --branch ${tag} --quiet ${repo} "${tempDir}"`,
+  {
+    stdio: ["ignore", "ignore", "inherit"],
+  }
+);
 
 fs.rmSync(path.join(tempDir, ".git"), {
   recursive: true,
@@ -135,10 +235,13 @@ fs.rmSync(path.join(tempDir, ".git"), {
 fs.cpSync(tempDir, targetDir, {
   recursive: true,
 });
+ok(`Landed in ${c.bold(projectName)}/`);
 
 //
-// Remove files not needed in the generated project
+// Trim files not needed in the generated project
 //
+
+step("Trimming unused boosters");
 
 [
   "scripts/syncVersion.js",
@@ -165,10 +268,13 @@ fs.cpSync(tempDir, targetDir, {
     force: true,
   });
 });
+ok("Stripped extras and stale lockfiles");
 
 //
 // Update package.json
 //
+
+step("Calibrating package.json");
 
 const packageJsonPath = path.join(targetDir, "package.json");
 
@@ -199,22 +305,27 @@ fs.writeFileSync(
   packageJsonPath,
   JSON.stringify(pkg, null, 2)
 );
+ok(`Named your ship ${c.bold(projectName)}`);
 
 //
 // Install dependencies
 //
 
 if (!skipInstall) {
-  console.log(`\nInstalling dependencies using ${pm}...\n`);
+  step(`Loading dependencies with ${c.bold(pm)}`);
 
   execSync(`${pm} install`, {
     cwd: targetDir,
     stdio: "inherit",
   });
+  ok("Engines online");
+} else {
+  step("Skipping dependency install");
+  info(`Run "${pm} install" inside ${projectName}/ when you're ready.`);
 }
 
 //
-// Next steps
+// Lift off
 //
 
 const devCommands = {
@@ -225,10 +336,10 @@ const devCommands = {
 };
 
 console.log(`
-Done.
+${c.green("All systems go.")} ${c.dim("Pre-flight checklist complete.")}
 
-Next steps:
+  ${c.dim("$")} ${c.cyan(`cd ${projectName}`)}
+  ${c.dim("$")} ${c.cyan(devCommands[pm])}
 
-  cd ${projectName}
-  ${devCommands[pm]}
+${c.bold("Happy launching!")} ${c.magenta("🚀")}
 `);
