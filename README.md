@@ -4,33 +4,39 @@ Launchpad to start the Astro Stardrive boilerplate.
 
 It helps you getting Stardrive installed and also auto-adjusts some details for better fit.
 
+<br />
+
 Simply run:
 
 ```sh
 npm create stardrive
 ```
 
-or
+*or*
 
 ```sh
 pnpm create stardrive
 ```
 
-or
+*or*
 
 ```sh
 yarn create stardrive
 ```
 
-or
+*or*
 
 ```sh
 bun create stardrive
 ```
 
+<br />
+
 > [!TIP]
 > Use the flag `--no-install` to skip the dependency install.
 > Use the flag `--version X.X.X` to use a specific version.
+
+<br />
 
 Alternatively, you can also always simply fork/clone the original repository at [github.com/Peltmonger/stardrive](https://github.com/Peltmonger/stardrive).
 
