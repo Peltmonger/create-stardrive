@@ -9,25 +9,25 @@ It helps you getting Stardrive installed and also auto-adjusts some details for 
 Simply run:
 
 ```sh
-npm create stardrive
+npm create stardrive@latest
 ```
 
 *or*
 
 ```sh
-pnpm create stardrive
+pnpm create stardrive@latest
 ```
 
 *or*
 
 ```sh
-yarn create stardrive
+yarn create stardrive@latest
 ```
 
 *or*
 
 ```sh
-bun create stardrive
+bun create stardrive@latest
 ```
 
 <br />
