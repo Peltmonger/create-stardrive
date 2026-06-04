@@ -41,7 +41,7 @@ jobs:
             exit 1
           fi
 
-  build-and-publish:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -49,7 +49,5 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org/
-      - name: Update npm
-        run: npm install -g npm@latest
       - name: Publish package
         run: npm publish
