@@ -48,8 +48,7 @@
   },
   "scripts": {
     "build": "node build.mjs",
-    "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
