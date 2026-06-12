@@ -1,6 +1,6 @@
 {
   "name": "create-stardrive",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "This is the launchpad application to create the Astro Stardrive boilerplate.",
   "bin": {
     "create-stardrive": "bin/index.js"
