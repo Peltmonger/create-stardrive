@@ -1,0 +1,277 @@
+import fs from "node:fs";
+import path from "node:path";
+import readline from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
+import { c, info, ok, step } from "./logger.js";
+
+function removePaths(targetDir: string, entries: string[]): void {
+  for (const entry of entries) {
+    fs.rmSync(path.join(targetDir, entry), {
+      recursive: true,
+      force: true,
+    });
+  }
+}
+
+function editFile(
+  targetDir: string,
+  relativePath: string,
+  transform: (content: string) => string,
+): void {
+  const filePath = path.join(targetDir, relativePath);
+  if (!fs.existsSync(filePath)) return;
+  const before = fs.readFileSync(filePath, "utf8");
+  const after = transform(before);
+  if (after !== before) fs.writeFileSync(filePath, after);
+}
+
+function removeLines(source: string, pattern: RegExp): string {
+  return source
+    .split("\n")
+    .filter((line) => !pattern.test(line))
+    .join("\n");
+}
+
+function removeBraceBlock(source: string, startPattern: RegExp): string {
+  const match = startPattern.exec(source);
+  if (!match) return source;
+
+  const start = match.index;
+  let i = source.indexOf("{", start);
+  if (i === -1) return source;
+
+  let depth = 0;
+  let end = -1;
+  for (; i < source.length; i++) {
+    const ch = source[i];
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        end = i;
+        break;
+      }
+    }
+  }
+  if (end === -1) return source;
+
+  let after = end + 1;
+  while (after < source.length && /[);,]/.test(source[after]!)) after++;
+  if (source[after] === "\n") after++;
+
+  let head = start;
+  while (head > 0 && /[ \t]/.test(source[head - 1]!)) head--;
+
+  return source.slice(0, head) + source.slice(after);
+}
+
+function removeCollectionFromExport(source: string, name: string): string {
+  return source.replace(
+    /(export const collections\s*=\s*\{)([^}]*)(\};?)/,
+    (_full, open: string, body: string, close: string) => {
+      const items = body
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0 && entry !== name);
+      return `${open} ${items.join(", ")} ${close}`;
+    },
+  );
+}
+
+function removeBlog(targetDir: string): void {
+  removePaths(targetDir, [
+    "src/utils/blog.ts",
+    "src/utils/reading-time.ts",
+    "src/styles/blog.css",
+    "src/pages/rss.xml.js",
+    "src/pages/[lang]/rss.xml.js",
+    "src/pages/blog",
+    "src/pages/[lang]/blog",
+    "src/layouts/article.astro",
+    "src/images/content/articles-fallback.jpg",
+    "src/images/content/articles",
+    "src/content/articles",
+    "src/components/structured/article.astro",
+    "src/components/blog",
+    "scripts/processSocialImages.js",
+    "public/data/articles",
+  ]);
+
+  editFile(targetDir, "scripts/postbuild.js", (content) =>
+    removeLines(content, /await import\(['"]\.\/processSocialImages\.js['"]\);/),
+  );
+
+  editFile(targetDir, "src/content.config.ts", (content) => {
+    const withoutDecl = removeBraceBlock(content, /const articles = defineCollection\(/);
+    return removeCollectionFromExport(withoutDecl, "articles");
+  });
+
+  editFile(targetDir, "theme.config.ts", (content) => {
+    const withoutSection = removeBraceBlock(content, /^[ \t]*articles:\s*\{/m);
+    const withoutComment = removeLines(withoutSection, /^\s*\/\/ content\/article settings\s*$/);
+    return removeLines(withoutComment, /^\s*addArticles:/);
+  });
+}
+
+function removeFaq(targetDir: string): void {
+  removePaths(targetDir, [
+    "src/content/faq-answers",
+    "src/pages/faq.astro",
+    "src/pages/[lang]/faq.astro",
+  ]);
+
+  editFile(targetDir, "src/content.config.ts", (content) => {
+    const withoutDecl = removeBraceBlock(content, /const faq_answers = defineCollection\(/);
+    return removeCollectionFromExport(withoutDecl, "faq_answers");
+  });
+
+  editFile(targetDir, "theme.config.ts", (content) =>
+    removeLines(content, /^\s*addFAQ:/),
+  );
+}
+
+function removeIntegration(targetDir: string): void {
+  removePaths(targetDir, [
+    "src/images/content/integration",
+    "src/content/integration-options",
+    "src/pages/integration",
+    "src/pages/[lang]/integration",
+    "src/components/integration-list.astro",
+  ]);
+
+  editFile(targetDir, "src/content.config.ts", (content) => {
+    const withoutDecl = removeBraceBlock(
+      content,
+      /const integration_options = defineCollection\(/,
+    );
+    return removeCollectionFromExport(withoutDecl, "integration_options");
+  });
+}
+
+function cleanupNav(
+  targetDir: string,
+  removed: { blog: boolean; faq: boolean; integration: boolean },
+): void {
+  const routes = [
+    removed.blog ? "blog" : null,
+    removed.faq ? "faq" : null,
+    removed.integration ? "integration" : null,
+  ].filter((route): route is string => route !== null);
+
+  if (routes.length === 0) return;
+
+  const pattern = new RegExp(
+    `getLocaleUrl\\(['"](?:${routes.join("|")})['"]`,
+  );
+
+  editFile(targetDir, "src/components/layout/nav/footer-nav.astro", (content) =>
+    removeLines(content, pattern),
+  );
+}
+
+interface PackageJson {
+  scripts?: Record<string, string>;
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+  [key: string]: unknown;
+}
+
+function removeCloudflare(targetDir: string): void {
+  removePaths(targetDir, [
+    "scripts/purgeCloudflareCache.js",
+    "worker-configuration.d.ts",
+    "wrangler.jsonc",
+    "public/_headers",
+  ]);
+
+  editFile(targetDir, "astro.config.ts", (content) => {
+    const withoutImport = removeLines(
+      content,
+      /^import cloudflare from ['"]@astrojs\/cloudflare['"];/,
+    );
+    return removeLines(withoutImport, /^\s*adapter: cloudflare\(/);
+  });
+
+  const packageJsonPath = path.join(targetDir, "package.json");
+  if (fs.existsSync(packageJsonPath)) {
+    const pkg = JSON.parse(
+      fs.readFileSync(packageJsonPath, "utf8"),
+    ) as PackageJson;
+
+    if (pkg.scripts) delete pkg.scripts["purge:cloudflare"];
+    if (pkg.dependencies) {
+      delete pkg.dependencies["@astrojs/cloudflare"];
+      delete pkg.dependencies["wrangler"];
+    }
+    if (pkg.devDependencies) {
+      delete pkg.devDependencies["@astrojs/cloudflare"];
+      delete pkg.devDependencies["wrangler"];
+    }
+
+    fs.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2));
+  }
+}
+
+async function confirm(
+  rl: readline.Interface,
+  question: string,
+  defaultYes = true,
+): Promise<boolean> {
+  const hint = defaultYes ? "(Y/n)" : "(y/N)";
+  const answer = (
+    await rl.question(`${c.cyan("?")} ${c.bold(question)} ${c.dim(`${hint} `)}`)
+  )
+    .trim()
+    .toLowerCase();
+
+  if (!answer) return defaultYes;
+  return answer === "y" || answer === "yes";
+}
+
+export async function configureFeatures(targetDir: string): Promise<void> {
+  step("Configuring optional features");
+
+  if (!input.isTTY) {
+    info("Non-interactive shell detected; keeping all features.");
+    return;
+  }
+
+  const rl = readline.createInterface({ input, output });
+
+  try {
+    const keepBlog = await confirm(rl, "Keep the blog feature?");
+    if (!keepBlog) {
+      removeBlog(targetDir);
+      ok("Removed the blog feature");
+    }
+
+    const keepFaq = await confirm(rl, "Keep the FAQ feature?");
+    if (!keepFaq) {
+      removeFaq(targetDir);
+      ok("Removed the FAQ feature");
+    }
+
+    const keepIntegration = await confirm(rl, "Keep the integration catalog?");
+    if (!keepIntegration) {
+      removeIntegration(targetDir);
+      ok("Removed the integration catalog");
+    }
+
+    cleanupNav(targetDir, {
+      blog: !keepBlog,
+      faq: !keepFaq,
+      integration: !keepIntegration,
+    });
+
+    const useCloudflare = await confirm(
+      rl,
+      "Will you host on Cloudflare Workers?",
+    );
+    if (!useCloudflare) {
+      removeCloudflare(targetDir);
+      ok("Removed Cloudflare-specific setup");
+    }
+  } finally {
+    rl.close();
+  }
+}

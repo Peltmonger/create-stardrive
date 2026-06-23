@@ -6,7 +6,7 @@ import { c, info, ok, step } from "./logger.js";
 import { STARDRIVE_REPO } from "./release.js";
 import type { PackageManager } from "./types.js";
 
-const TRIM_ENTRIES = ["scripts/syncVersion.js", "SECURITY.md", ".github"];
+const TRIM_ENTRIES = ["scripts/syncVersion.js", ".ai/TRIMMING_GUIDE.md", "SECURITY.md", ".github"];
 
 const STALE_LOCKFILES = [
   "package-lock.json",
