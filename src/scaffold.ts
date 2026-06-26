@@ -89,6 +89,13 @@ export function calibratePackageJson(
   if (pkg.scripts) {
     delete pkg.scripts["sync-version"];
     delete pkg.scripts["prebuild"];
+
+    if (pkg.scripts["fix"]) {
+      pkg.scripts["fix"] = pkg.scripts["fix"].replace(
+        "npm run sync-version && ",
+        "",
+      );
+    }
   }
 
   if (pm === "pnpm") {
