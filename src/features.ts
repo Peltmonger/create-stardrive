@@ -182,6 +182,7 @@ function removeCloudflare(targetDir: string): void {
     "worker-configuration.d.ts",
     "wrangler.jsonc",
     "public/_headers",
+    "public/_redirects",
   ]);
 
   editFile(targetDir, "astro.config.ts", (content) => {
