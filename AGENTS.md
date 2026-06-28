@@ -59,14 +59,6 @@ That's the whole flow — no manual `npm publish` from a laptop is needed (or wa
 - `module: NodeNext` — **imports must use `.js` extensions** (e.g. `./logger.js`), even though source is `.ts`. esbuild handles it; tsc requires it.
 - `isolatedModules` + `verbatimModuleSyntax` — type-only imports need `import type`.
 
-## Session learnings (Jun 2026 — TS rewrite)
-
-- The published artifact stayed behaviorally identical. The rewrite was purely a structural split: one ~345-line `bin/index.js` → eight typed modules + an esbuild bundle.
-- `bin/index.js` was deleted from git tracking and added to `.gitignore`. The build step in the publish workflow regenerates it before `npm publish` reads `files: ["bin"]`.
-- The previous `files` entry was `["index.js"]`; this changed to `["bin"]` along with the new `bin/` output location. Don't regress this — npm will publish nothing useful otherwise.
-- No `prepublishOnly` script was added in the end; the CI workflow runs `npm run build` explicitly before `npm publish`. If you ever publish manually from a laptop, remember to build first.
-- The PR's agent notes file was apparently not included in the merge — hence this file. Commit it directly to `main` next time.
-
 ## Conventions worth keeping
 
 - No runtime deps. The CLI relies only on Node built-ins + `git` on PATH. Keep it that way; users run this with `npm create` and dep-installs there are painful.
