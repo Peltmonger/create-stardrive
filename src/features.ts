@@ -162,6 +162,10 @@ function removeEvents(targetDir: string): void {
     const withoutDecl = removeBraceBlock(content, /const events = defineCollection\(/);
     return removeCollectionFromExport(withoutDecl, "events");
   });
+
+  editFile(targetDir, "theme.config.ts", (content) =>
+    removeLines(content, /^\s*addEvents:/),
+  );
 }
 
 function cleanupNav(
