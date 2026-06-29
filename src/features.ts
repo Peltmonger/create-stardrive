@@ -148,14 +148,30 @@ function removeIntegration(targetDir: string): void {
   });
 }
 
+function removeEvents(targetDir: string): void {
+  removePaths(targetDir, [
+    "src/pages/events",
+    "src/pages/[lang]/events",
+    "src/components/event-list.astro",
+    "src/content/events",
+    "src/images/content/events",
+  ]);
+
+  editFile(targetDir, "src/content.config.ts", (content) => {
+    const withoutDecl = removeBraceBlock(content, /const events = defineCollection\(/);
+    return removeCollectionFromExport(withoutDecl, "events");
+  });
+}
+
 function cleanupNav(
   targetDir: string,
-  removed: { blog: boolean; faq: boolean; integration: boolean },
+  removed: { blog: boolean; faq: boolean; integration: boolean; events: boolean },
 ): void {
   const routes = [
     removed.blog ? "blog" : null,
     removed.faq ? "faq" : null,
     removed.integration ? "integration" : null,
+    removed.events ? "events" : null,
   ].filter((route): route is string => route !== null);
 
   if (routes.length === 0) return;
@@ -258,10 +274,17 @@ export async function configureFeatures(targetDir: string): Promise<void> {
       ok("Removed the integration catalog");
     }
 
+    const keepEvents = await confirm(rl, "Keep the events feature?");
+    if (!keepEvents) {
+      removeEvents(targetDir);
+      ok("Removed the events feature");
+    }
+
     cleanupNav(targetDir, {
       blog: !keepBlog,
       faq: !keepFaq,
       integration: !keepIntegration,
+      events: !keepEvents,
     });
 
     const useCloudflare = await confirm(
