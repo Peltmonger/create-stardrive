@@ -150,6 +150,7 @@ function removeIntegration(targetDir: string): void {
 
 function removeEvents(targetDir: string): void {
   removePaths(targetDir, [
+    "src/styles/events.css",
     "src/pages/events",
     "src/pages/[lang]/events",
     "src/components/event-list.astro",
