@@ -157,6 +157,7 @@ function removeEvents(targetDir: string): void {
     "src/components/event-list.astro",
     "src/content/events",
     "src/images/content/events",
+    "src/utils/event-bridge.ts"
   ]);
 
   editFile(targetDir, "src/content.config.ts", (content) => {
