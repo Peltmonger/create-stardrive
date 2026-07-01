@@ -154,6 +154,7 @@ function removeEvents(targetDir: string): void {
     "src/styles/events.css",
     "src/pages/events",
     "src/pages/[lang]/events",
+    "src/pages/dynamic-events-sitemap.xml.ts",
     "src/components/event-list.astro",
     "src/content/events",
     "src/images/content/events",
@@ -169,6 +170,10 @@ function removeEvents(targetDir: string): void {
     const withoutSection = removeBraceBlock(content, /^[ \t]*dynamicEvents:\s*\{/m);
     const withoutComment = removeLines(withoutSection, /^\s*\/\/ you can also dynamically integrate events.*$/m);
     return removeLines(withoutComment, /^\s*addEvents:/);
+  });
+
+  editFile(targetDir, "astro.config.ts", (content) => {
+    return removeLines(content, /^\s*customSitemaps:\s.*$/m);
   });
 }
 
