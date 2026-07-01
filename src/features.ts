@@ -164,9 +164,11 @@ function removeEvents(targetDir: string): void {
     return removeCollectionFromExport(withoutDecl, "events");
   });
 
-  editFile(targetDir, "theme.config.ts", (content) =>
-    removeLines(content, /^\s*addEvents:/),
-  );
+  editFile(targetDir, "theme.config.ts", (content) => {
+    const withoutSection = removeBraceBlock(content, /^[ \t]*dynamicEvents:\s*\{/m);
+    const withoutComment = removeLines(withoutSection, /^\s*\/\/ you can also dynamically integrate events.*$/m);
+    return removeLines(withoutComment, /^\s*addEvents:/);
+  });
 }
 
 function cleanupNav(
