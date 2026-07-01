@@ -110,6 +110,15 @@ export function calibratePackageJson(
   ok(`Named your ship ${c.bold(projectName)}`);
 }
 
+export function setAgentMode(targetDir: string): void {
+  step("Specifying AI agent mode in the project");
+
+  const aiDir = path.join(targetDir, ".ai");
+  fs.mkdirSync(aiDir, { recursive: true });
+  fs.writeFileSync(path.join(aiDir, "STARDRIVE_AGENT_MODE"), "project");
+  ok("Created .ai/STARDRIVE_AGENT_MODE");
+}
+
 export function installDependencies(
   targetDir: string,
   projectName: string,

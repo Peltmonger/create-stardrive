@@ -12,6 +12,7 @@ import { resolveTag } from "./release.js";
 import {
   calibratePackageJson,
   cloneRepo,
+  setAgentMode,
   installDependencies,
   trimProject,
 } from "./scaffold.js";
@@ -39,6 +40,7 @@ trimProject(targetDir);
 calibratePackageJson(targetDir, projectName, pm);
 await configureFeatures(targetDir);
 installDependencies(targetDir, projectName, pm, skipInstall);
+setAgentMode(targetDir);
 
 console.log(`
 ${c.green("All systems go.")} ${c.dim("Pre-flight checklist complete.")}
