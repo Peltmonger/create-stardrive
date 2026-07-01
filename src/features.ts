@@ -118,6 +118,7 @@ function removeFaq(targetDir: string): void {
     "src/content/faq-answers",
     "src/pages/faq.astro",
     "src/pages/[lang]/faq.astro",
+    "src/components/faq-list.astro",
   ]);
 
   editFile(targetDir, "src/content.config.ts", (content) => {
