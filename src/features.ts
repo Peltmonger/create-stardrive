@@ -118,7 +118,7 @@ function removeFaq(targetDir: string): void {
     "src/content/faq-answers",
     "src/pages/faq.astro",
     "src/pages/[lang]/faq.astro",
-    "src/components/faq-list.astro",
+    "src/components/faq",
   ]);
 
   editFile(targetDir, "src/content.config.ts", (content) => {
@@ -137,7 +137,7 @@ function removeIntegration(targetDir: string): void {
     "src/content/integration-options",
     "src/pages/integration",
     "src/pages/[lang]/integration",
-    "src/components/integration-list.astro",
+    "src/components/integration",
   ]);
 
   editFile(targetDir, "src/content.config.ts", (content) => {
@@ -155,7 +155,7 @@ function removeEvents(targetDir: string): void {
     "src/pages/events",
     "src/pages/[lang]/events",
     "src/pages/dynamic-events-sitemap.xml.ts",
-    "src/components/event-list.astro",
+    "src/components/events",
     "src/content/events",
     "src/images/content/events",
     "src/utils/event-bridge.ts"
