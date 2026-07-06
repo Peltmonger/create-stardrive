@@ -161,10 +161,11 @@ export function calibrateGitignore(
 export function setAgentMode(targetDir: string): void {
   step("Specifying AI agent mode in the project");
 
-  const aiDir = path.join(targetDir, ".ai");
-  fs.mkdirSync(aiDir, { recursive: true });
-  fs.writeFileSync(path.join(aiDir, "STARDRIVE_AGENT_MODE"), "project");
-  ok("Created .ai/STARDRIVE_AGENT_MODE");
+  fs.writeFileSync(
+    path.join(targetDir, "STARDRIVE_AGENT_MODE.md"),
+    "project\n",
+  );
+  ok("Created STARDRIVE_AGENT_MODE.md");
 }
 
 export function installDependencies(
