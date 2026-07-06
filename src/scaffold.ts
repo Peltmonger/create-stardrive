@@ -110,6 +110,54 @@ export function calibratePackageJson(
   ok(`Named your ship ${c.bold(projectName)}`);
 }
 
+const LOCKFILE_RULES: Record<PackageManager, string> = {
+  npm: "package-lock.json",
+  pnpm: "pnpm-lock.yaml",
+  yarn: "yarn.lock",
+  bun: "bun.lockb",
+};
+
+export function calibrateGitignore(
+  targetDir: string,
+  pm: PackageManager,
+): void {
+  step("Calibrating .gitignore lockfile rules");
+
+  const gitignorePath = path.join(targetDir, ".gitignore");
+
+  if (!fs.existsSync(gitignorePath)) {
+    info("No .gitignore found, skipping lockfile calibration");
+    return;
+  }
+
+  const lines = fs.readFileSync(gitignorePath, "utf8").split(/\r?\n/);
+
+  const activeRule = LOCKFILE_RULES[pm];
+  const inactiveRules = Object.values(LOCKFILE_RULES).filter(
+    (rule) => rule !== activeRule,
+  );
+
+  const rewritten = lines.map((line) => {
+    const trimmed = line.trim();
+    const match = trimmed.match(/^#?\s*(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb)$/);
+    if (!match) return line;
+
+    const rule = match[1]!;
+    if (rule === activeRule) {
+      // Comment out the active PM's lockfile so it gets committed.
+      return `#${rule}`;
+    }
+    if (inactiveRules.includes(rule)) {
+      // Ensure all other lockfiles are actively ignored.
+      return rule;
+    }
+    return line;
+  });
+
+  fs.writeFileSync(gitignorePath, rewritten.join("\n"));
+  ok(`Enabled ${activeRule} for ${pm}, ignored others`);
+}
+
 export function setAgentMode(targetDir: string): void {
   step("Specifying AI agent mode in the project");
 

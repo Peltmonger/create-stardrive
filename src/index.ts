@@ -10,6 +10,7 @@ import { configureFeatures } from "./features.js";
 import { askProjectName } from "./project-name.js";
 import { resolveTag } from "./release.js";
 import {
+  calibrateGitignore,
   calibratePackageJson,
   cloneRepo,
   setAgentMode,
@@ -38,6 +39,7 @@ ok(`Selected ${c.bold(tag)}`);
 cloneRepo(tag, targetDir, projectName);
 trimProject(targetDir);
 calibratePackageJson(targetDir, projectName, pm);
+calibrateGitignore(targetDir, pm);
 await configureFeatures(targetDir);
 installDependencies(targetDir, projectName, pm, skipInstall);
 setAgentMode(targetDir);
