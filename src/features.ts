@@ -281,7 +281,9 @@ function removeCloudflare(targetDir: string): void {
       content,
       /^import cloudflare from ['"]@astrojs\/cloudflare['"];/,
     );
-    return removeLines(withoutImport, /^\s*adapter: cloudflare\(/);
+    // `adapter: cloudflare({ ... })` spans multiple lines - drop the whole
+    // brace-balanced block (and its trailing `,`) rather than just the opener.
+    return removeBraceBlock(withoutImport, /^\s*adapter:\s*cloudflare\(/m);
   });
 
   const packageJsonPath = path.join(targetDir, "package.json");
