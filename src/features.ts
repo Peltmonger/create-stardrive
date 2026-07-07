@@ -111,6 +111,34 @@ function removeBlog(targetDir: string): void {
     const withoutComment = removeLines(withoutSection, /^\s*\/\/ content\/article settings\s*$/);
     return removeLines(withoutComment, /^\s*addArticles:/);
   });
+
+  // Drop the `reading-time` dependency and its Vite optimizeDps entry.
+  const packageJsonPath = path.join(targetDir, "package.json");
+  if (fs.existsSync(packageJsonPath)) {
+    const pkg = JSON.parse(
+      fs.readFileSync(packageJsonPath, "utf8"),
+    ) as PackageJson;
+
+    if (pkg.dependencies) delete pkg.dependencies["reading-time"];
+    if (pkg.devDependencies) delete pkg.devDependencies["reading-time"];
+
+    fs.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2));
+  }
+
+  editFile(targetDir, "astro.config.ts", (content) =>
+    content
+      .replace(
+        /(\binclude:\s*\[)([^\]]*)\]/,
+        (_full, prefix: string, body: string) => {
+          const items = body
+            .split(",")
+            .map((entry) => entry.trim())
+            .filter((entry) => entry.length > 0 && entry !== "'reading-time'");
+          return `${prefix}${items.join(", ")}]`;
+        },
+      )
+      .replace(/,\s*\]/, "]"),
+  );
 }
 
 function removeFaq(targetDir: string): void {
@@ -147,6 +175,21 @@ function removeIntegration(targetDir: string): void {
     );
     return removeCollectionFromExport(withoutDecl, "integration_options");
   });
+
+  // The default boilerplate lists `integration_options` as the only on-demand
+  // rendered collection and excludes `/integration/**` from llms.txt. With the
+  // feature gone, both arrays should be emptied so no stale references remain.
+  editFile(targetDir, "theme.config.ts", (content) =>
+    content
+      .replace(
+        /onDemandRenderedCollections:\s*\[[^\]]*\]/,
+        "onDemandRenderedCollections: []",
+      )
+      .replace(
+        /excludePagesPattern:\s*\[[^\]]*\]/,
+        "excludePagesPattern: []",
+      ),
+  );
 }
 
 function removeEvents(targetDir: string): void {
@@ -175,6 +218,24 @@ function removeEvents(targetDir: string): void {
   editFile(targetDir, "astro.config.ts", (content) => {
     return removeLines(content, /^\s*customSitemaps:\s.*$/m);
   });
+}
+
+function cleanupContentConfig(targetDir: string): void {
+  const contentConfigPath = path.join(targetDir, "src/content.config.ts");
+  if (!fs.existsSync(contentConfigPath)) return;
+
+  const content = fs.readFileSync(contentConfigPath, "utf8");
+
+  // If the `collections` export body is empty (only whitespace), every
+  // collection has been removed - collapse the file to a minimal stub so
+  // no dangling imports or declarations remain.
+  const match = content.match(
+    /export const collections\s*=\s*\{([^}]*)\}\s*;?/,
+  );
+  if (match && match[1]!.trim() === "") {
+    fs.writeFileSync(contentConfigPath, "export const collections = {};\n");
+    ok("No content collections left; cleaned up content.config.ts");
+  }
 }
 
 function cleanupNav(
@@ -300,6 +361,8 @@ export async function configureFeatures(targetDir: string): Promise<void> {
       integration: !keepIntegration,
       events: !keepEvents,
     });
+
+    cleanupContentConfig(targetDir);
 
     const useCloudflare = await confirm(
       rl,
