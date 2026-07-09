@@ -15,6 +15,7 @@ export function commandExists(cmd: string): boolean {
   return (
     spawnSync(cmd, ["--version"], {
       stdio: "ignore",
+      shell: process.platform === "win32",
     }).status === 0
   );
 }
