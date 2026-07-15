@@ -1,6 +1,6 @@
 # create-stardrive
 
-CLI launchpad that scaffolds a new project from the [Astro Stardrive](https://github.com/Peltmonger/stardrive) boilerplate. Run via `npm create stardrive@latest` (or the pnpm/yarn/bun equivalents).
+CLI launchpad that scaffolds a new project from the [Astro Stardrive](https://github.com/peltmonger/stardrive) boilerplate. Run via `npm create stardrive@latest` (or the pnpm/yarn/bun equivalents).
 
 ## What it does (in order)
 

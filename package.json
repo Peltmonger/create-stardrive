@@ -22,13 +22,13 @@
     "framework",
     "boilerplate"
   ],
-  "homepage": "https://github.com/Peltmonger/create-stardrive#readme",
+  "homepage": "https://github.com/peltmonger/create-stardrive#readme",
   "bugs": {
-    "url": "https://github.com/Peltmonger/create-stardrive/issues"
+    "url": "https://github.com/peltmonger/create-stardrive/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Peltmonger/create-stardrive.git"
+    "url": "git+https://github.com/peltmonger/create-stardrive.git"
   },
   "author": {
     "name": "Peltmonger Ventures GmbH",

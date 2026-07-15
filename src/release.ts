@@ -1,7 +1,7 @@
 import { execSync } from "node:child_process";
 import { fail } from "./logger.js";
 
-export const STARDRIVE_REPO = "https://github.com/Peltmonger/stardrive.git";
+export const STARDRIVE_REPO = "https://github.com/peltmonger/stardrive.git";
 
 export function normalizeTag(tag: string): string {
   return tag.startsWith("v") ? tag : `v${tag}`;

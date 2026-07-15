@@ -38,7 +38,7 @@ bun create stardrive@latest
 
 <br />
 
-Alternatively, you can also always simply fork/clone the original repository at [github.com/Peltmonger/stardrive](https://github.com/Peltmonger/stardrive).
+Alternatively, you can also always simply fork/clone the original repository at [github.com/peltmonger/stardrive](https://github.com/peltmonger/stardrive).
 
 For every following step, please also consult the original repository!
 
