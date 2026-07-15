@@ -182,7 +182,7 @@ export function installDependencies(
 
   step(`Loading dependencies with ${c.bold(pm)}`);
 
-  execSync(`${pm} install`, {
+  execSync(`${pm} install --silent`, {
     cwd: targetDir,
     stdio: "inherit",
   });
