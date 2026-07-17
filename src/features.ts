@@ -22,7 +22,13 @@ function editFile(
   if (!fs.existsSync(filePath)) return;
   const before = fs.readFileSync(filePath, "utf8");
   const after = transform(before);
-  if (after !== before) fs.writeFileSync(filePath, after);
+  if (after !== before) {
+    // Collapse any runs of 3+ newlines (i.e. 2+ consecutive blank lines)
+    // down to a single blank line. Block removals and line drops can leave
+    // these behind, which trips prettier's `no-multiple-empty-lines` rule.
+    const collapsed = after.replace(/\n{3,}/g, "\n\n");
+    fs.writeFileSync(filePath, collapsed);
+  }
 }
 
 function removeLines(source: string, pattern: RegExp): string {
@@ -61,22 +67,6 @@ function removeBraceBlock(source: string, startPattern: RegExp): string {
 
   let head = start;
   while (head > 0 && /[ \t]/.test(source[head - 1]!)) head--;
-
-  // If the line immediately before the block is blank, drop it too -
-  // otherwise removing the block would leave two consecutive blank lines,
-  // which trips prettier's `no-multiple-empty-lines` rule.
-  if (head > 0 && source[head - 1] === "\n") {
-    let p = head - 2;
-    let blank = true;
-    while (p >= 0 && source[p] !== "\n") {
-      if (!/[ \t]/.test(source[p]!)) {
-        blank = false;
-        break;
-      }
-      p--;
-    }
-    if (blank) head = p + 1;
-  }
 
   return source.slice(0, head) + source.slice(after);
 }
@@ -343,7 +333,7 @@ function updateDroppedFeatures(targetDir: string, features: string[]): void {
     const closingMatch = content.match(/\n};\s*$/);
     if (!closingMatch || closingMatch.index === undefined) return content;
 
-    const insert = `  droppedFeatures: ${arrayLiteral},\n`;
+    const insert = `\n  droppedFeatures: ${arrayLiteral},`;
     return content.slice(0, closingMatch.index) + insert + content.slice(closingMatch.index);
   });
 }
