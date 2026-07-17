@@ -62,6 +62,22 @@ function removeBraceBlock(source: string, startPattern: RegExp): string {
   let head = start;
   while (head > 0 && /[ \t]/.test(source[head - 1]!)) head--;
 
+  // If the line immediately before the block is blank, drop it too -
+  // otherwise removing the block would leave two consecutive blank lines,
+  // which trips prettier's `no-multiple-empty-lines` rule.
+  if (head > 0 && source[head - 1] === "\n") {
+    let p = head - 2;
+    let blank = true;
+    while (p >= 0 && source[p] !== "\n") {
+      if (!/[ \t]/.test(source[p]!)) {
+        blank = false;
+        break;
+      }
+      p--;
+    }
+    if (blank) head = p + 1;
+  }
+
   return source.slice(0, head) + source.slice(after);
 }
 
@@ -306,6 +322,32 @@ function removeCloudflare(targetDir: string): void {
   }
 }
 
+/**
+ * Records the list of dropped features in `theme.config.ts` under the
+ * `droppedFeatures` key, so AI agents and maintainers can see at a glance
+ * which parts of the default boilerplate were intentionally removed.
+ */
+function updateDroppedFeatures(targetDir: string, features: string[]): void {
+  if (features.length === 0) return;
+
+  editFile(targetDir, "theme.config.ts", (content) => {
+    const arrayLiteral = `[${features.map((f) => `'${f}'`).join(", ")}]`;
+
+    // If `droppedFeatures` already exists, replace its value.
+    const existingPattern = /droppedFeatures\s*:\s*\[[^\]]*\]/;
+    if (existingPattern.test(content)) {
+      return content.replace(existingPattern, `droppedFeatures: ${arrayLiteral}`);
+    }
+
+    // Otherwise, insert it just before the final closing `};` of the export.
+    const closingMatch = content.match(/\n};\s*$/);
+    if (!closingMatch || closingMatch.index === undefined) return content;
+
+    const insert = `  droppedFeatures: ${arrayLiteral},\n`;
+    return content.slice(0, closingMatch.index) + insert + content.slice(closingMatch.index);
+  });
+}
+
 async function confirm(
   rl: readline.Interface,
   question: string,
@@ -331,30 +373,35 @@ export async function configureFeatures(targetDir: string): Promise<void> {
   }
 
   const rl = readline.createInterface({ input, output });
+  const dropped: string[] = [];
 
   try {
     const keepBlog = await confirm(rl, "Keep the blog feature?");
     if (!keepBlog) {
       removeBlog(targetDir);
       ok("Removed the blog feature");
+      dropped.push("blog");
     }
 
     const keepFaq = await confirm(rl, "Keep the FAQ feature?");
     if (!keepFaq) {
       removeFaq(targetDir);
       ok("Removed the FAQ feature");
+      dropped.push("faq");
     }
 
     const keepIntegration = await confirm(rl, "Keep the integration catalog?");
     if (!keepIntegration) {
       removeIntegration(targetDir);
       ok("Removed the integration catalog");
+      dropped.push("integrations");
     }
 
     const keepEvents = await confirm(rl, "Keep the events feature?");
     if (!keepEvents) {
       removeEvents(targetDir);
       ok("Removed the events feature");
+      dropped.push("events");
     }
 
     cleanupNav(targetDir, {
@@ -373,6 +420,12 @@ export async function configureFeatures(targetDir: string): Promise<void> {
     if (!useCloudflare) {
       removeCloudflare(targetDir);
       ok("Removed Cloudflare-specific setup");
+      dropped.push("cloudflare");
+    }
+
+    updateDroppedFeatures(targetDir, dropped);
+    if (dropped.length > 0) {
+      ok(`Recorded dropped features: ${dropped.join(", ")}`);
     }
   } finally {
     rl.close();
