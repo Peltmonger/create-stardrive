@@ -333,7 +333,7 @@ function updateDroppedFeatures(targetDir: string, features: string[]): void {
     const closingMatch = content.match(/\n};\s*$/);
     if (!closingMatch || closingMatch.index === undefined) return content;
 
-    const insert = `\n  droppedFeatures: ${arrayLiteral},`;
+    const insert = `\n\n  droppedFeatures: ${arrayLiteral},`;
     return content.slice(0, closingMatch.index) + insert + content.slice(closingMatch.index);
   });
 }
